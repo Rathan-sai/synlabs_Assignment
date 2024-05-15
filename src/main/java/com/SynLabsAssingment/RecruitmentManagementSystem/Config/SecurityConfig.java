@@ -5,6 +5,7 @@ import com.SynLabsAssingment.RecruitmentManagementSystem.Security.JwtAuthenticat
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -22,20 +23,22 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)throws Exception{
 
-        //YOu have to do configuration..
-        http
-                .csrf(csrf->csrf.disable())
-                .authorizeHttpRequests(auth->auth
-                        .requestMatchers("/home/**").authenticated()
-                        .requestMatchers("/sunbase/**").permitAll()
-                        .requestMatchers("/auth/login").permitAll()
-                        .requestMatchers(("/customer/**")).permitAll()
-                        .anyRequest().authenticated())
-                .exceptionHandling(exc->exc.authenticationEntryPoint(point))
-                .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+        httpSecurity.csrf(csrf->csrf.disable())
+                .authorizeRequests(auth ->auth
+                .requestMatchers("/signup", "/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/admin/job").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/admin/job/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/admin/applicants").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/admin/applicant/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/uploadResume").hasAuthority("APPLICANT")
+                .requestMatchers(HttpMethod.GET, "/jobs").authenticated()
+                .requestMatchers(HttpMethod.GET, "/jobs/apply").hasAuthority("APPLICANT")
+                .anyRequest().authenticated())
+                .exceptionHandling(exc -> exc.authenticationEntryPoint(point))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        httpSecurity.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
+        return httpSecurity.build();
     }
 }
